@@ -1,0 +1,77 @@
+'''
+Created on Dec 3, 2013
+
+@author: ali
+'''
+import codecs
+
+import feedparser
+import nltk
+import pyodbc
+
+class feedReader:
+    def __init__(self, url):
+        self.url = url
+        self.words = []
+      
+    
+    def feed_extarct(self):
+        items = []
+        feednum = 0
+        log = feedparser.parse(self.url)    
+        print "feed read"
+        for item in  log.entries:
+            
+            title = item.title
+            text = item["summary"]
+        # items.append((title, text))
+            yield (title, text)
+            print "extarcting feed No. " + str(feednum)
+            feednum += 1
+       # return items    
+    def save_as_text(self, url):
+        outputfile = codecs.open("c:\\feed.txt", "w", "UTF-8") 
+        for item in self.feed_extarct():
+            outputfile.write(item[0] + " " + item[1])
+        outputfile.close()   
+        print "saving result in text file"
+    def save_result(self):
+        connecion = pyodbc.connect(("Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
+                                     "DBQ=C:\\test2.mdb;"))
+        print "connectted to DB"
+        cursor = connecion.cursor()
+     #   cursor.execute("select title, text from feeds")
+        url = "http://feeds.bbc.co.uk/persian/iran/index.xml"
+    
+        for item in self.feed_extarct():
+          # print item[0]   
+          # sql = "INSERT INTO feeds(title,text) VALUES (?,?);"
+        #  cursor.execute("INSERT INTO feeds(text) VALUES (?)",item[1])
+          sql = "INSERT INTO feeds(text) VALUES (?);"
+          cursor.execute(sql, item[1])
+     
+         # cursor.execute("insert into feeds(title, text) values (?,?)", item[0], item[1])
+          print "saving to database"
+          print ".",
+          cursor.commit()
+       # cursor.close()
+       
+    def getkey(self):
+        return item[0]        
+    def tokenize(self):
+        dict = {}
+        for item in self.feed_extarct():
+            
+            for word in item[1].split():
+                if word not in dict:
+                     dict[word] = 1
+                else:
+                    dict[word] += 1     
+        for item in sorted(dict.iteritems(),self.getkey()):
+             print item[0],item[1]                 
+url = "http://feeds.bbc.co.uk/persian/iran/index.xml"
+ 
+feedread = feedReader(url)   
+feedread.tokenize()  
+# for item in feedread.feed_extarct():
+#     print item[1]
